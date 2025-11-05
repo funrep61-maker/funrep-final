@@ -414,6 +414,7 @@ export default function GameRoom() {
         lastValidBetsRef.current = updated;
         return updated;
       });
+      setPlayerChips(data.chips);
     };
 
     const handleBetsLocked = (data: { bets: any[]; chips: number }) => {
@@ -435,7 +436,10 @@ export default function GameRoom() {
         return updated;
       });
       
-      console.log(`Locked ${locked.length} bet(s), total current bets now includes locked bets`);
+      // Update player chips (important for reconnect scenario)
+      setPlayerChips(data.chips);
+      
+      console.log(`Locked ${locked.length} bet(s), total current bets now includes locked bets, chips: ${data.chips}`);
     };
 
     const handleBetsCancelled = (data: { message: string; chips: number }) => {
@@ -447,6 +451,7 @@ export default function GameRoom() {
         return updated;
       });
       setUnlockedBets([]);
+      setPlayerChips(data.chips);
     };
 
     const handleLockedBetsCancelled = (data: { message: string; chips: number }) => {
@@ -458,6 +463,7 @@ export default function GameRoom() {
         return updated;
       });
       setLockedBets([]);
+      setPlayerChips(data.chips);
     };
 
     socket.on('bet-placed', handleBetPlaced);
