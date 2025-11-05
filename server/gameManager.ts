@@ -382,8 +382,10 @@ export class GameManager {
     }
 
     // DO NOT clear locked bets - they persist for player reconnection
+    // Keep activeBets entry under original socket ID for settlement
+    // Duplicates will be prevented in resolveBets by tracking processed betIds
     if (player && player.dbId && this.lockedBets.has(player.dbId)) {
-      console.log(`Preserved ${this.lockedBets.get(player.dbId)!.length} locked bet(s) for player ${player.name} (dbId: ${player.dbId}) - will be restored on reconnect`);
+      console.log(`Preserved ${this.lockedBets.get(player.dbId)!.length} locked bet(s) for player ${player.name} (dbId: ${player.dbId}) - will be settled even if offline`);
     }
 
     // Remove player from room
@@ -581,6 +583,31 @@ export class GameManager {
           betId: bet.betId
         }));
         console.log(`Restored ${restoredLockedBets.length} locked bet(s) for ${roomPlayer.name} (dbId: ${dbPlayer.id})`);
+        
+        // Remove any stale activeBets entries for this player's bets (prevents duplicate counting)
+        if (room.activeBets) {
+          const betIdsToRestore = new Set(lockedBets.map(b => b.betId));
+          for (const [oldSocketId, bets] of Array.from(room.activeBets.entries())) {
+            // Remove bets that match our locked bet IDs from other socket entries
+            const filteredBets = bets.filter(bet => !betIdsToRestore.has(bet.id));
+            if (filteredBets.length === 0) {
+              room.activeBets.delete(oldSocketId);
+              console.log(`Removed stale activeBets entry for socket ${oldSocketId}`);
+            } else if (filteredBets.length !== bets.length) {
+              room.activeBets.set(oldSocketId, filteredBets);
+              console.log(`Removed ${bets.length - filteredBets.length} duplicate bet(s) from socket ${oldSocketId}`);
+            }
+          }
+        } else {
+          room.activeBets = new Map();
+        }
+        
+        // Now add fresh activeBets mapping with new socket id for settlement
+        room.activeBets.set(socket.id, lockedBets.map(bet => ({
+          id: bet.betId,
+          betType: bet.betType,
+          betAmount: bet.amount
+        })));
         
         // Send locked bets to the client
         socket.emit('bets-locked', {
@@ -870,9 +897,18 @@ export class GameManager {
 
     let roundWagered = 0;
     let roundPaidOut = 0;
+    const processedBetIds = new Set<number>(); // Track processed bets to prevent duplicates
 
     for (const [socketId, bets] of Array.from(room.activeBets.entries())) {
       for (const bet of bets) {
+        // Skip if this bet was already processed (prevents duplicate settlement on reconnect)
+        if (processedBetIds.has(bet.id)) {
+          console.log(`Skipping duplicate bet ${bet.id} from socket ${socketId} (already processed)`);
+          continue;
+        }
+        
+        processedBetIds.add(bet.id);
+        
         const won = this.isBetWinner(bet, room.currentCard);
         const winAmount = won ? this.calculateWinAmount(bet) : 0;
         
@@ -884,13 +920,22 @@ export class GameManager {
           // Update bet outcome in database
           const result = await storage.resolveBet(bet.id, won, winAmount);
           
-          // Update room player chips
-          const roomPlayer = room.players.find((p: Player) => p.socketId === socketId);
-          if (roomPlayer && result.updatedPlayer) {
-            roomPlayer.chips = result.updatedPlayer.chips;
+          // Update room player chips (try to find by socketId first)
+          let roomPlayer = room.players.find((p: Player) => p.socketId === socketId);
+          
+          // If player not found by socketId (they disconnected), try to find by dbId
+          if (!roomPlayer && result?.updatedPlayer) {
+            roomPlayer = room.players.find((p: Player) => p.dbId === result.updatedPlayer?.id);
           }
-
-          console.log(`Bet ${bet.id}: ${won ? 'WON' : 'LOST'} - Wager: ${bet.betAmount}, Payout: ${winAmount}`);
+          
+          // Update chips in memory if player is still connected
+          if (roomPlayer && result?.updatedPlayer) {
+            roomPlayer.chips = result.updatedPlayer.chips;
+            console.log(`Bet ${bet.id}: ${won ? 'WON' : 'LOST'} - Wager: ${bet.betAmount}, Payout: ${winAmount} (Player: ${roomPlayer.name})`);
+          } else {
+            // Player disconnected but bet still settled in database
+            console.log(`Bet ${bet.id}: ${won ? 'WON' : 'LOST'} - Wager: ${bet.betAmount}, Payout: ${winAmount} (Player disconnected, settled in database)`);
+          }
         } catch (error) {
           console.error('Error resolving bet:', error);
         }
@@ -902,6 +947,10 @@ export class GameManager {
 
     // Clear active bets
     room.activeBets.clear();
+    
+    // Clear locked bets map now that round is over
+    this.lockedBets.clear();
+    console.log('Cleared all locked bets after round settlement');
   }
 
   private isBetWinner(bet: any, card: Card): boolean {
