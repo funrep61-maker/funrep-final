@@ -14,6 +14,11 @@ export default function GameRoom() {
   const [currentCard, setCurrentCard] = useState<CardType | null>(null);
   const [countdownTime, setCountdownTime] = useState<number>(0);
   const [gameStatus, setGameStatus] = useState<string>('waiting');
+  
+  // Log gameStatus and countdown changes
+  useEffect(() => {
+    console.log(`🎮 GameStatus changed to: ${gameStatus}, countdown: ${countdownTime}s`);
+  }, [gameStatus, countdownTime]);
   const [playerChips, setPlayerChips] = useState<number>(1000);
   const [recentResults, setRecentResults] = useState<any[]>([]);
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
@@ -524,6 +529,7 @@ export default function GameRoom() {
     }
     
     function onGameStarting(data: { room: GameRoom; countdownTime: number }) {
+      console.log('Received game-starting event:', data);
       setCurrentRoom(data.room);
       setCountdownTime(data.countdownTime);
       setGameStatus('countdown');
@@ -551,6 +557,8 @@ export default function GameRoom() {
     }
 
     function onRoundEnded(data: { room: GameRoom }) {
+      console.log('Received round-ended event:', data);
+      
       // Save current bets as previous round bets before a new round starts
       if (currentBets.length > 0) {
         setPreviousRoundBets([...currentBets]);
