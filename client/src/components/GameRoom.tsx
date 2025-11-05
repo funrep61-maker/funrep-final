@@ -144,23 +144,6 @@ export default function GameRoom() {
     }
   }, [currentBets]);
 
-  // Reset bets only when waiting for next round (after results are shown)
-  useEffect(() => {
-    if (gameStatus === 'waiting') {
-      // Save current bets as previous round bets before resetting
-      if (currentBets.length > 0) {
-        setPreviousRoundBets([...currentBets]);
-      }
-      // Delay reset to allow popup to show first
-      setTimeout(() => {
-        setCurrentBets([]);
-        setLockedBets([]);
-        setUnlockedBets([]);
-        setSelectedBetType('');
-      }, 100);
-    }
-  }, [gameStatus, currentBets]);
-
   const canPlaceBet = () => {
     const availableBalance = playerChips - totalBetAmount;
     return gameStatus === 'countdown' && 
@@ -545,6 +528,11 @@ export default function GameRoom() {
     }
 
     function onRoundEnded(data: { room: GameRoom }) {
+      // Save current bets as previous round bets before a new round starts
+      if (currentBets.length > 0) {
+        setPreviousRoundBets([...currentBets]);
+      }
+      
       setCurrentRoom(data.room);
       setGameStatus('waiting');
       setGameState('waiting');
@@ -556,6 +544,14 @@ export default function GameRoom() {
       fetchResults();
       // Update game count to reflect the new round number
       fetchGameCount();
+      
+      // Clear all bets after a short delay to allow results to be shown
+      setTimeout(() => {
+        setCurrentBets([]);
+        setLockedBets([]);
+        setUnlockedBets([]);
+        setSelectedBetType('');
+      }, 100);
     }
 
     socket.on('game-state', onGameState);
