@@ -248,6 +248,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Update last login time
       await storage.updateUserLastLogin(user.id);
 
+      // Create or update player record and set online status
+      await storage.createOrUpdatePlayerByUserId(user.id, 'web-session', user.username);
+      await storage.updatePlayerOnlineStatus(user.id, true);
+
       // Store user in session (without password hash)
       req.session.user = {
         id: user.id,
@@ -268,15 +272,25 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post("/api/auth/logout", async (req, res) => {
-    // Destroy server session
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('Session destroy error:', err);
-        return res.status(500).json({ message: "Logout failed" });
+  app.post("/api/auth/logout", async (req: AuthRequest, res) => {
+    try {
+      // Set user offline before destroying session
+      if (req.session.user) {
+        await storage.updatePlayerOnlineStatus(req.session.user.id, false);
       }
-      res.json({ success: true });
-    });
+      
+      // Destroy server session
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('Session destroy error:', err);
+          return res.status(500).json({ message: "Logout failed" });
+        }
+        res.json({ success: true });
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({ message: "Logout failed" });
+    }
   });
 
   // User stats routes - requires authentication
