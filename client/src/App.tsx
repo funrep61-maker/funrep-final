@@ -86,6 +86,7 @@ function App() {
     // Listen for lucky 7 exit event
     function handleExitLucky7() {
       setCurrentView('userDashboard');
+      setCurrentRoom(null); // Clear room state so GameLobby shows next time
     }
 
     socket.on('connect', onConnect);
