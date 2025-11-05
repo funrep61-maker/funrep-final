@@ -399,7 +399,7 @@ export default function UsersPage() {
           <DialogFooter>
             <Button
               onClick={() => setShowUserStatsDialog(false)}
-              className="border-2 border-neo-accent bg-neo-accent/20 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+              className="border-2 border-neo-accent bg-neo-accent/20 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading"
             >
               Close
             </Button>
@@ -433,13 +433,13 @@ export default function UsersPage() {
             <Button
               variant="outline"
               onClick={() => setShowStatusConfirmDialog(false)}
-              className="border-2 border-neo-accent text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+              className="border-2 border-neo-accent text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading"
             >
               Cancel
             </Button>
             <Button
               onClick={confirmStatusChange}
-              className="border-2 border-neo-accent bg-neo-accent/30 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+              className="border-2 border-neo-accent bg-neo-accent/30 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading"
             >
               Yes, {statusConfirmData?.action} User
             </Button>
@@ -488,13 +488,13 @@ export default function UsersPage() {
             <Button
               variant="outline"
               onClick={() => setShowFundsDialog(false)}
-              className="border-2 border-neo-accent text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+              className="border-2 border-neo-accent text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading"
             >
               Cancel
             </Button>
             <Button
               onClick={submitFundsDialog}
-              className="border-2 border-neo-accent bg-neo-accent/30 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+              className="border-2 border-neo-accent bg-neo-accent/30 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading"
             >
               Confirm
             </Button>
@@ -525,13 +525,13 @@ export default function UsersPage() {
             <Button
               variant="outline"
               onClick={() => setShowFundsConfirmDialog(false)}
-              className="border-2 border-neo-accent text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+              className="border-2 border-neo-accent text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading"
             >
               Cancel
             </Button>
             <Button
               onClick={confirmFundsChange}
-              className="border-2 border-neo-accent bg-neo-accent/30 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+              className="border-2 border-neo-accent bg-neo-accent/30 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading"
             >
               Confirm
             </Button>
@@ -551,7 +551,7 @@ export default function UsersPage() {
           <DialogFooter>
             <Button
               onClick={() => setShowAlertDialog(false)}
-              className="border-2 border-neo-accent bg-neo-accent/20 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+              className="border-2 border-neo-accent bg-neo-accent/20 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading"
             >
               OK
             </Button>
@@ -601,13 +601,13 @@ export default function UsersPage() {
             <Button
               variant="outline"
               onClick={() => setShowPasswordDialog(false)}
-              className="border-2 border-neo-accent text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+              className="border-2 border-neo-accent text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading"
             >
               Cancel
             </Button>
             <Button
               onClick={submitPasswordChange}
-              className="border-2 border-neo-accent bg-neo-accent/30 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+              className="border-2 border-neo-accent bg-neo-accent/30 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading"
             >
               Change Password
             </Button>

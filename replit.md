@@ -4,7 +4,22 @@ FunRep is a real-time multiplayer casino gaming platform built with React, Expre
 
 # Recent Changes
 
-**November 3, 2025 (Latest)**: Implemented house-optimized Lucky 7 result logic
+**November 5, 2025 (Latest)**: Enhanced Admin User Management
+- **Password Change Feature**: Added ability for admin to change any user's password
+  - New purple key icon button in user list Actions column
+  - Password change dialog with validation (minimum 6 characters)
+  - Confirms password match before submitting
+  - Backend endpoint with bcrypt password hashing for security
+  - Works for all users including admin changing their own password
+- **Dialog Animation Removal**: Completely removed all animations from dialogs
+  - Disabled all slide, fade, and position-change animations
+  - Removed transition effects from all dialog buttons
+  - Dialogs now open/close instantly without any movement
+  - Fixed mouse-over animation issues making dialogs difficult to click
+  - Applied consistently across all 6 admin action dialogs (Stats, Status, Funds, Password, Confirm, Alert)
+  - Improved usability on both PC and mobile devices
+
+**November 3, 2025**: Implemented house-optimized Lucky 7 result logic
 - **Payout Minimization**: System now automatically selects card outcomes that minimize total payout to players
   - Analyzes all active bets (red, black, low, high, lucky7) and calculates payout for each possible outcome
   - Selects outcome category (red-low, red-high, black-low, black-high) with minimum total payout
