@@ -81,6 +81,11 @@ export class GameManager {
     
     // Set up betting event handlers
     this.setupBettingHandlers();
+    
+    // Auto-start the first game when server starts (after a small delay)
+    setTimeout(() => {
+      this.startGame(null as any, 'GLOBAL');
+    }, 5000); // 5 seconds after server start
   }
 
   private generateRoomId(): string {
@@ -323,10 +328,8 @@ export class GameManager {
     
     console.log(`Player ${socket.id} joined Lucky 7 game`);
 
-    // Auto-start game immediately (no minimum player requirement)
-    if (room.status === 'waiting') {
-      setTimeout(() => this.startGame(socket, 'GLOBAL'), 2000);
-    }
+    // Game runs continuously - no need to start on player join
+    // Players join the current round in progress
   }
 
   async leaveRoom(socket: Socket) {
