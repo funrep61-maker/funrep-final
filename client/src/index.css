@@ -57,10 +57,23 @@ body {
   transition: all 0.3s ease;
 }
 
+/* Disable transitions on dialog boxes */
+[role="dialog"] .neo-glass-card {
+  transition: none !important;
+}
+
 .neo-glass-card:hover {
   border-color: var(--accent-primary);
   box-shadow: 0 0 8px var(--accent-primary), 0 4px 20px rgba(0, 0, 0, 0.4);
   transform: translateY(-4px);
+}
+
+/* Disable hover effects on dialog boxes */
+[role="dialog"] .neo-glass-card,
+[role="dialog"] .neo-glass-card:hover {
+  transform: none !important;
+  transition: none !important;
+  border-color: var(--border);
 }
 
 /* Neon Glow Effects */
