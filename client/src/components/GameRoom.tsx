@@ -425,6 +425,17 @@ export default function GameRoom() {
       }));
       setLockedBets(locked);
       setUnlockedBets([]);
+      
+      // Update currentBets to include locked bets (important for restored bets on reconnect)
+      setCurrentBets(prev => {
+        const existingBetIds = new Set(prev.map(b => b.betId).filter(id => id !== undefined));
+        const newBets = locked.filter(bet => !existingBetIds.has(bet.betId));
+        const updated = [...prev, ...newBets];
+        lastValidBetsRef.current = updated;
+        return updated;
+      });
+      
+      console.log(`Locked ${locked.length} bet(s), total current bets now includes locked bets`);
     };
 
     const handleBetsCancelled = (data: { message: string; chips: number }) => {
