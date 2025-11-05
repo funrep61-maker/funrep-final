@@ -21,7 +21,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80",
+      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-none data-[state=closed]:animate-none",
       className
     )}
     {...props}
@@ -41,6 +41,7 @@ const DialogContent = React.forwardRef<
         "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg sm:rounded-lg",
         className
       )}
+      onOpenAutoFocus={(e) => e.preventDefault()}
       {...props}
     >
       {children}

@@ -36,6 +36,7 @@ export interface IStorage {
   createAdminUser(user: InsertUser): Promise<User>;
   updateUserStatus(userId: number, status: string): Promise<User | undefined>;
   updateUserLastLogin(userId: number): Promise<User | undefined>;
+  updateUserPassword(userId: number, password: string): Promise<User | undefined>;
   getUsersWithPlayerInfo(): Promise<Array<User & { playerInfo?: Player }>>;
   
   // Players
@@ -167,6 +168,15 @@ export class DatabaseStorage implements IStorage {
   async updateUserLastLogin(userId: number): Promise<User | undefined> {
     const result = await db.update(users)
       .set({ lastLogin: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async updateUserPassword(userId: number, password: string): Promise<User | undefined> {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const result = await db.update(users)
+      .set({ password: hashedPassword })
       .where(eq(users.id, userId))
       .returning();
     return result[0];

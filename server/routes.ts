@@ -580,6 +580,45 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Change user password
+  app.post("/api/admin/users/:userId/password", requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { password } = req.body;
+
+      if (!userId || isNaN(userId)) {
+        return res.status(400).json({ message: "Valid User ID is required" });
+      }
+
+      if (!password || password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const updatedUser = await storage.updateUserPassword(userId, password);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update password" });
+      }
+
+      console.log(`Admin ${req.user!.username} changed password for user ${updatedUser.username}`);
+      res.json({ 
+        message: "Password changed successfully",
+        user: {
+          id: updatedUser.id,
+          username: updatedUser.username
+        }
+      });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      res.status(500).json({ message: "Failed to change password" });
+    }
+  });
+
   // Get detailed user stats  
   app.get("/api/admin/users/:userId/stats", requireAdmin, async (req: AuthRequest, res) => {
     try {

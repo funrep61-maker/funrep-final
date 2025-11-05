@@ -3,7 +3,7 @@ import { Button } from '../../ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
 import { Input } from '../../ui/input';
-import { Users as UsersIcon, BarChart, Ban, Check, DollarSign, AlertTriangle } from 'lucide-react';
+import { Users as UsersIcon, BarChart, Ban, Check, DollarSign, AlertTriangle, Key } from 'lucide-react';
 
 interface AdminUser {
   id: number;
@@ -39,6 +39,10 @@ export default function UsersPage() {
   const [alertMessage, setAlertMessage] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null);
   const [showErrorMessage, setShowErrorMessage] = useState<string | null>(null);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordDialogData, setPasswordDialogData] = useState<{userId: number; username: string} | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -168,6 +172,55 @@ export default function UsersPage() {
     }
   };
 
+  const handleChangePassword = (userId: number, username: string) => {
+    setPasswordDialogData({ userId, username });
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPasswordDialog(true);
+  };
+
+  const submitPasswordChange = async () => {
+    if (!passwordDialogData) return;
+
+    if (!newPassword || newPassword.length < 6) {
+      setAlertMessage('Password must be at least 6 characters long');
+      setShowAlertDialog(true);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setAlertMessage('Passwords do not match');
+      setShowAlertDialog(true);
+      return;
+    }
+
+    setShowPasswordDialog(false);
+
+    try {
+      const response = await fetch(`/api/admin/users/${passwordDialogData.userId}/password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setShowSuccessMessage(`Password changed successfully for ${passwordDialogData.username}`);
+        setTimeout(() => setShowSuccessMessage(null), 3000);
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        const error = await response.json();
+        setShowErrorMessage(error.message || 'Failed to change password');
+        setTimeout(() => setShowErrorMessage(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error changing password:', err);
+      setShowErrorMessage('Error changing password');
+      setTimeout(() => setShowErrorMessage(null), 3000);
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -261,6 +314,14 @@ export default function UsersPage() {
                           onClick={() => handleViewUserStats(user.id)}
                         >
                           <BarChart className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
+                          onClick={() => handleChangePassword(user.id, user.username)}
+                        >
+                          <Key className="w-4 h-4" />
                         </Button>
                         {user.role !== 'admin' && (
                           <>
@@ -493,6 +554,62 @@ export default function UsersPage() {
               className="border-2 border-neo-accent bg-neo-accent/20 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
             >
               OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="neo-glass-card border-neo-accent/30">
+          <DialogHeader>
+            <DialogTitle className="text-neo-accent font-heading font-bold flex items-center gap-2">
+              <Key className="w-6 h-6" />
+              Change User Password
+            </DialogTitle>
+            <DialogDescription className="text-neo-text-secondary">
+              Set a new password for {passwordDialogData?.username}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <label className="text-neo-text text-sm font-medium mb-2 block">
+                New Password
+              </label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password (min 6 characters)"
+                className="bg-neo-bg border-neo-accent/30 text-neo-text"
+              />
+            </div>
+            <div>
+              <label className="text-neo-text text-sm font-medium mb-2 block">
+                Confirm Password
+              </label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter new password"
+                className="bg-neo-bg border-neo-accent/30 text-neo-text"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowPasswordDialog(false)}
+              className="border-2 border-neo-accent text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={submitPasswordChange}
+              className="border-2 border-neo-accent bg-neo-accent/30 text-neo-accent hover:bg-neo-accent hover:text-neo-bg font-heading transition-all duration-300"
+            >
+              Change Password
             </Button>
           </DialogFooter>
         </DialogContent>
