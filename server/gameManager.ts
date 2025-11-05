@@ -290,7 +290,7 @@ export class GameManager {
     // No player limit check - everyone can join
 
     // Remove player from any existing room first
-    this.leaveRoom(socket);
+    await this.leaveRoom(socket);
 
     // Create a basic room player object (database persistence handled by API endpoints)
     const player: Player = {
@@ -329,7 +329,7 @@ export class GameManager {
     }
   }
 
-  leaveRoom(socket: Socket) {
+  async leaveRoom(socket: Socket) {
     const roomId = this.playerRooms.get(socket.id);
     if (!roomId) return;
 
@@ -338,13 +338,52 @@ export class GameManager {
     // Find player before removing
     const player = room.players.find((p: Player) => p.socketId === socket.id);
 
-    // Clear unlocked bets for this player
-    this.unlockedBets.delete(socket.id);
-    
-    // Clear locked bets for this player (if they exist)
-    if (player && player.dbId) {
-      this.lockedBets.delete(player.dbId);
-      console.log(`Cleared locked bets for player ${player.name} (dbId: ${player.dbId})`);
+    // Auto-cancel and refund unlocked bets when player exits
+    if (this.unlockedBets.has(socket.id)) {
+      const unlockedBets = this.unlockedBets.get(socket.id)!;
+      
+      try {
+        let totalRefund = 0;
+        
+        // Delete all unlocked bets from the database
+        for (const bet of unlockedBets) {
+          await storage.deleteBet(bet.betId);
+          totalRefund += bet.amount;
+          
+          // Remove from active bets
+          const playerBets = this.globalRoom.activeBets?.get(socket.id);
+          if (playerBets) {
+            const betIndex = playerBets.findIndex(b => b.id === bet.betId);
+            if (betIndex !== -1) {
+              playerBets.splice(betIndex, 1);
+            }
+          }
+        }
+        
+        // Remove active bets entry if empty
+        if (this.globalRoom.activeBets?.get(socket.id)?.length === 0) {
+          this.globalRoom.activeBets.delete(socket.id);
+        }
+        
+        if (player?.dbId && totalRefund > 0) {
+          const dbPlayer = await storage.getPlayer(player.dbId);
+          if (dbPlayer) {
+            // Refund the player
+            await storage.updatePlayerChips(player.dbId, dbPlayer.chips + totalRefund);
+            
+            console.log(`${unlockedBets.length} unlocked bet(s) auto-cancelled and refunded for disconnected player ${player?.name || socket.id}, total refund: ${totalRefund}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error refunding unlocked bets on disconnect:', error);
+      }
+      
+      this.unlockedBets.delete(socket.id);
+    }
+
+    // DO NOT clear locked bets - they persist for player reconnection
+    if (player && player.dbId && this.lockedBets.has(player.dbId)) {
+      console.log(`Preserved ${this.lockedBets.get(player.dbId)!.length} locked bet(s) for player ${player.name} (dbId: ${player.dbId}) - will be restored on reconnect`);
     }
 
     // Remove player from room
@@ -531,6 +570,24 @@ export class GameManager {
       roomPlayer.name = dbPlayer.name;
       roomPlayer.chips = dbPlayer.chips;
       roomPlayer.dbId = dbPlayer.id;
+
+      // Restore locked bets if player has any (from previous session/disconnect)
+      let restoredLockedBets: Array<{ betType: string; betAmount: number; betId: number }> = [];
+      if (this.lockedBets.has(dbPlayer.id)) {
+        const lockedBets = this.lockedBets.get(dbPlayer.id)!;
+        restoredLockedBets = lockedBets.map(bet => ({
+          betType: bet.betType,
+          betAmount: bet.amount,
+          betId: bet.betId
+        }));
+        console.log(`Restored ${restoredLockedBets.length} locked bet(s) for ${roomPlayer.name} (dbId: ${dbPlayer.id})`);
+        
+        // Send locked bets to the client
+        socket.emit('bets-locked', {
+          bets: restoredLockedBets.map(bet => ({ betType: bet.betType, betAmount: bet.betAmount, betId: bet.betId, locked: true })),
+          chips: dbPlayer.chips
+        });
+      }
 
       // Broadcast updated room state
       const sanitizedRoom = this.sanitizeRoomForBroadcast(room);
