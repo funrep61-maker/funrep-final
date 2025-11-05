@@ -428,7 +428,7 @@ export default function GameRoom() {
       setPlayerChips(data.chips);
     };
 
-    const handleBetsLocked = (data: { bets: any[]; chips: number }) => {
+    const handleBetsLocked = (data: { bets: any[]; chips: number; activeBets?: any[] }) => {
       const locked = data.bets.map(bet => ({
         type: bet.betType,
         value: bet.betType === 'lucky7' ? '7' : bet.betType,
@@ -438,14 +438,41 @@ export default function GameRoom() {
       setLockedBets(locked);
       setUnlockedBets([]);
       
-      // Update currentBets to include locked bets (important for restored bets on reconnect)
-      setCurrentBets(prev => {
-        const existingBetIds = new Set(prev.map(b => b.betId).filter(id => id !== undefined));
-        const newBets = locked.filter(bet => !existingBetIds.has(bet.betId));
-        const updated = [...prev, ...newBets];
-        lastValidBetsRef.current = updated;
-        return updated;
-      });
+      // Handle active bets restoration (like Coin Toss)
+      if (data.activeBets && data.activeBets.length > 0) {
+        console.log('Restoring active bets:', data.activeBets);
+        const restoredBets = data.activeBets.map(bet => ({
+          type: bet.type,
+          value: bet.type === 'lucky7' ? '7' : bet.type,
+          amount: bet.amount,
+          betId: bet.id
+        }));
+        setCurrentBets(restoredBets);
+        lastValidBetsRef.current = restoredBets;
+        
+        // Restore unlocked bets (those that are in activeBets but not in lockedBets)
+        const lockedBetIds = new Set(locked.map(b => b.betId));
+        const unlockedActiveBets = data.activeBets.filter(bet => !lockedBetIds.has(bet.id));
+        if (unlockedActiveBets.length > 0) {
+          console.log('Restoring unlocked bets:', unlockedActiveBets);
+          setUnlockedBets(unlockedActiveBets.map(bet => ({ 
+            type: bet.type, 
+            value: bet.type === 'lucky7' ? '7' : bet.type,
+            amount: bet.amount, 
+            betId: bet.id 
+          })));
+        }
+      } else {
+        // Original logic for when user just locked their bets (no activeBets provided)
+        // Update currentBets to include locked bets (important for restored bets on reconnect)
+        setCurrentBets(prev => {
+          const existingBetIds = new Set(prev.map(b => b.betId).filter(id => id !== undefined));
+          const newBets = locked.filter(bet => !existingBetIds.has(bet.betId));
+          const updated = [...prev, ...newBets];
+          lastValidBetsRef.current = updated;
+          return updated;
+        });
+      }
       
       // Update player chips (important for reconnect scenario)
       setPlayerChips(data.chips);

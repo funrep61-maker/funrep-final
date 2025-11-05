@@ -587,8 +587,28 @@ export class GameManager {
       roomPlayer.chips = dbPlayer.chips;
       roomPlayer.dbId = dbPlayer.id;
 
-      // Restore locked bets if player has any (from previous session/disconnect)
+      // Fetch active bets from database for current game (like Coin Toss)
+      let activeBets: any[] = [];
       let restoredLockedBets: Array<{ betType: string; betAmount: number; betId: number }> = [];
+
+      if (room.currentGameId && dbPlayer.id) {
+        try {
+          const playerBets = await storage.getPlayerBetsByGame(dbPlayer.id, room.currentGameId);
+          activeBets = playerBets.map(bet => ({
+            id: bet.id,
+            type: bet.betType,
+            amount: bet.betAmount
+          }));
+
+          if (activeBets.length > 0) {
+            console.log(`Fetched ${activeBets.length} active bet(s) from database for ${roomPlayer.name}`);
+          }
+        } catch (error) {
+          console.error('Error fetching player bets:', error);
+        }
+      }
+
+      // Restore locked bets if player has any (from previous session/disconnect)
       if (this.lockedBets.has(dbPlayer.id)) {
         const lockedBets = this.lockedBets.get(dbPlayer.id)!;
         restoredLockedBets = lockedBets.map(bet => ({
@@ -622,13 +642,40 @@ export class GameManager {
           betType: bet.betType,
           betAmount: bet.amount
         })));
-        
-        // Send locked bets to the client
-        socket.emit('bets-locked', {
-          bets: restoredLockedBets.map(bet => ({ betType: bet.betType, betAmount: bet.betAmount, betId: bet.betId, locked: true })),
-          chips: dbPlayer.chips
-        });
       }
+
+      // If we have activeBets from database but no locked bets, restore them as unlocked
+      if (activeBets.length > 0 && !this.lockedBets.has(dbPlayer.id)) {
+        if (!room.activeBets) {
+          room.activeBets = new Map();
+        }
+        room.activeBets.set(socket.id, activeBets.map(bet => ({
+          id: bet.id,
+          betType: bet.type,
+          betAmount: bet.amount
+        })));
+
+        // CRITICAL: Restore unlocked bets to this.unlockedBets map for lock/cancel operations
+        const lockedBetIds = new Set(restoredLockedBets.map(b => b.betId));
+        const unlockedActiveBets = activeBets.filter(bet => !lockedBetIds.has(bet.id));
+        
+        if (unlockedActiveBets.length > 0) {
+          this.unlockedBets.set(socket.id, unlockedActiveBets.map(bet => ({
+            betType: bet.type,
+            amount: bet.amount,
+            playerId: dbPlayer.id,
+            betId: bet.id
+          })));
+          console.log(`Restored ${unlockedActiveBets.length} unlocked bet(s) to server state for ${roomPlayer.name}`);
+        }
+      }
+
+      // Send both locked bets and active bets to the client (like Coin Toss)
+      socket.emit('bets-locked', {
+        bets: restoredLockedBets.map(bet => ({ betType: bet.betType, betAmount: bet.betAmount, betId: bet.betId, locked: true })),
+        chips: dbPlayer.chips,
+        activeBets: activeBets
+      });
 
       // Broadcast updated room state
       const sanitizedRoom = this.sanitizeRoomForBroadcast(room);
