@@ -333,6 +333,9 @@ export class GameManager {
     const roomId = this.playerRooms.get(socket.id);
     if (!roomId) return;
 
+    // Delete immediately to prevent double execution from race condition
+    this.playerRooms.delete(socket.id);
+
     const room = this.globalRoom;
 
     // Find player before removing
@@ -390,7 +393,6 @@ export class GameManager {
 
     // Remove player from room
     room.players = room.players.filter((p: Player) => p.socketId !== socket.id);
-    this.playerRooms.delete(socket.id);
     socket.leave(roomId);
 
     // Emit updated room state (sanitized to prevent card leaks)
