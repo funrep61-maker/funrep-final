@@ -471,11 +471,13 @@ export default function GameRoom() {
       console.log('Received initial game state:', data);
       setCurrentRoom(data.room);
       
-      if (data.status === 'countdown') {
+      // If there's an active countdown (> 0), always treat as countdown status
+      // This ensures users can join mid-round and see the countdown/bet immediately
+      if (data.countdownTime > 0 && data.status !== 'playing') {
         setGameStatus('countdown');
         setGameState('countdown');
         setCountdownTime(data.countdownTime);
-        console.log(`Joined during countdown with ${data.countdownTime}s remaining`);
+        console.log(`Joined during active countdown with ${data.countdownTime}s remaining`);
       } else if (data.status === 'playing' && data.currentCard) {
         setGameStatus('revealed');
         setGameState('playing');
@@ -484,13 +486,8 @@ export default function GameRoom() {
       } else {
         setGameStatus('waiting');
         setGameState('waiting');
-        // Preserve countdown time even in waiting phase
-        if (data.countdownTime !== undefined && data.countdownTime > 0) {
-          setCountdownTime(data.countdownTime);
-          console.log(`Joined during waiting phase with ${data.countdownTime}s remaining`);
-        } else {
-          console.log('Joined during waiting phase');
-        }
+        setCountdownTime(data.countdownTime || 0);
+        console.log('Joined during waiting phase');
       }
     }
 
