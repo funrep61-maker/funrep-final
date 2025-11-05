@@ -326,6 +326,14 @@ export class GameManager {
     };
     socket.emit('game-state', currentGameState);
     
+    // If game is already in countdown, send game-starting event to sync the new player
+    if (room.status === 'countdown') {
+      socket.emit('game-starting', {
+        room: sanitizedRoom,
+        countdownTime: room.countdownTime
+      });
+    }
+    
     console.log(`Player ${socket.id} joined Lucky 7 game`);
 
     // Game runs continuously - no need to start on player join
