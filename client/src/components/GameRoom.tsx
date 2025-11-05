@@ -316,6 +316,24 @@ export default function GameRoom() {
     lastValidBetsRef.current = [];
   };
 
+  // Fetch player data (chips balance)
+  const fetchPlayerData = async () => {
+    try {
+      const response = await fetch('/api/player/me', {
+        headers: {
+          'socket-id': socket.id || '',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPlayerChips(data.chips);
+        console.log(`Player chips updated: ${data.chips}`);
+      }
+    } catch (error) {
+      console.error('Error fetching player data:', error);
+    }
+  };
+
   // Fetch recent results only when needed
   const fetchResults = async () => {
     try {
@@ -347,6 +365,7 @@ export default function GameRoom() {
     const handleConnect = () => {
       setSocketConnected(true);
       setSocketId(socket.id || '');
+      fetchPlayerData(); // Fetch player data when connected
     };
 
     const handleDisconnect = () => {
@@ -358,6 +377,7 @@ export default function GameRoom() {
     if (socket.connected && socket.id) {
       setSocketConnected(true);
       setSocketId(socket.id);
+      fetchPlayerData(); // Fetch player data on initial load
     }
 
     socket.on('connect', handleConnect);
@@ -470,6 +490,9 @@ export default function GameRoom() {
       // Sync initial game state when joining mid-round
       console.log('Received initial game state:', data);
       setCurrentRoom(data.room);
+      
+      // Fetch player chips when joining/rejoining
+      fetchPlayerData();
       
       // If there's an active countdown (> 0), always treat as countdown status
       // This ensures users can join mid-round and see the countdown/bet immediately
