@@ -27,7 +27,7 @@ export const players = pgTable("players", {
   userId: integer("user_id").references(() => users.id).notNull(),
   socketId: varchar("socket_id", { length: 255 }).notNull(),
   name: text("name").notNull(),
-  chips: integer("chips").default(1000).notNull(),
+  chips: integer("chips").default(0).notNull(),
   totalWins: integer("total_wins").default(0).notNull(),
   totalLosses: integer("total_losses").default(0).notNull(),
   totalBetsAmount: integer("total_bets_amount").default(0).notNull(),

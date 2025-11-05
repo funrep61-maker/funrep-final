@@ -297,7 +297,7 @@ export class GameManager {
       id: socket.id,
       name: `Player ${room.players.length + 1}`,
       socketId: socket.id,
-      chips: 1000, // Default chips - real balance from database via API
+      chips: 0, // Default chips - real balance from database via API
       dbId: undefined // Will be set when player authenticates and API creates database record
     };
 

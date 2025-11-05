@@ -270,7 +270,7 @@ export class DatabaseStorage implements IStorage {
         userId,
         socketId,
         name,
-        chips: 1000, // Start with default chips only for new players
+        chips: 0, // New players start with 0 chips
       }).returning();
       return result[0];
     }
