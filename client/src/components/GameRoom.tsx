@@ -69,6 +69,9 @@ export default function GameRoom() {
   };
 
   const exitFullscreen = async () => {
+    // Tell server we're leaving (this will auto-cancel any unlocked bets)
+    socket.emit('leave-room');
+    
     // Exit fullscreen and close the game
     if (document.fullscreenElement) {
       try {
