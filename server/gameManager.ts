@@ -315,8 +315,12 @@ export class GameManager {
     this.io.to('GLOBAL').emit('room-updated', sanitizedRoom);
     
     // Send current game state to the newly joined player
+    // Fix: Override status to 'countdown' when there's active betting time (countdownTime > 0 and card not revealed)
+    // This ensures rejoining players see the correct game phase
+    const gameStatus = (room.countdownTime > 0 && !room.currentCard?.revealed) ? 'countdown' : room.status;
+    
     const currentGameState = {
-      status: room.status,
+      status: gameStatus,
       countdownTime: room.countdownTime,
       currentCard: room.status === 'playing' && room.currentCard ? {
         ...room.currentCard,
@@ -327,7 +331,7 @@ export class GameManager {
     socket.emit('game-state', currentGameState);
     
     // If game is already in countdown, send game-starting event to sync the new player
-    if (room.status === 'countdown') {
+    if (gameStatus === 'countdown') {
       socket.emit('game-starting', {
         room: sanitizedRoom,
         countdownTime: room.countdownTime
