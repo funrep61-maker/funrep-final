@@ -528,8 +528,12 @@ export class GameManager {
     const sanitizedRoom = this.sanitizeRoomForBroadcast(room);
     this.io.to('GLOBAL').emit('round-ended', { room: sanitizedRoom });
 
-    // Auto-start next round immediately (no minimum player requirement)
-    this.startGame(room.players[0] as any, 'GLOBAL');
+    // Auto-start next round only if there are players in the room
+    if (room.players.length > 0) {
+      this.startGame(room.players[0] as any, 'GLOBAL');
+    } else {
+      console.log('No players in room, game will remain in waiting status until a player joins');
+    }
   }
 
   handleDisconnect(socket: Socket) {
