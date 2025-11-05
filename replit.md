@@ -4,7 +4,21 @@ FunRep is a real-time multiplayer casino gaming platform built with React, Expre
 
 # Recent Changes
 
-**November 5, 2025 (Latest)**: Enhanced Admin User Management
+**November 5, 2025 (Latest)**: Fixed Lucky 7 Rejoin Logic to Match Coin Toss
+- **Unlocked Bet Restoration**: Players can now see their unlocked bets after rejoining mid-round
+  - When user places bets without locking and exits, then rejoins within betting period, bets are restored
+  - Server now fetches active bets from database and sends to client on authentication
+  - Client filters activeBets to identify unlocked bets (those not in lockedBets)
+  - Unlocked bets are displayed and can be locked or cancelled after rejoin
+- **Server-Side State Restoration**: Critical fix to restore unlocked bets to server state
+  - Server now restores unlocked bets to `this.unlockedBets` map with new socket ID
+  - Ensures lock/cancel operations work correctly after rejoin
+  - Auto-refund on disconnect still functions properly
+- **Complete Parity with Coin Toss**: Lucky 7 rejoin behavior now matches Coin Toss exactly
+  - Same rejoin logic for both locked and unlocked bets
+  - Consistent user experience across all games
+
+**November 5, 2025**: Enhanced Admin User Management
 - **Password Change Feature**: Added ability for admin to change any user's password
   - New purple key icon button in user list Actions column
   - Password change dialog with validation (minimum 6 characters)
